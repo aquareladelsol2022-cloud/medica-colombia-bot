@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Médica Colombia S.A.S. - Bot WhatsApp IA & Panel de Coordinación</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #06182c 0%, #0b2d48 50%, #0f172a 100%);
+            min-height: 100vh;
+            color: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            padding: 18px 24px;
+            gap: 16px;
+        }
+
+        .top-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 16px;
+            padding: 12px 20px;
+            backdrop-filter: blur(12px);
+        }
+
+        .brand-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-badge {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #2563eb, #f97316);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            font-weight: 800;
+            color: white;
+        }
+
+        .brand-title h1 {
+            font-size: 18px;
+            font-weight: 800;
+            color: #ffffff;
+        }
+
+        .brand-title p {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        .header-pills {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .pill {
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .pill.orange {
+            background: rgba(249, 115, 22, 0.15);
+            color: #fb923c;
+            border-color: rgba(249, 115, 22, 0.35);
+        }
+
+        .workspace {
+            display: grid;
+            grid-template-columns: 340px 1fr 370px;
+            gap: 18px;
+            flex: 1;
+            min-height: calc(100vh - 110px);
+        }
+
+        @media (max-width: 1180px) {
+            .workspace {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: rgba(15, 23, 42, 0.82);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 18px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: auto;
+            max-height: calc(100vh - 110px);
+        }
+
+        .panel h2 {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #fb923c;
+            font-weight: 800;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 8px;
+        }
+
+        .quick-prompts {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+
+        .prompt-btn {
+            text-align: left;
+            background: rgba(30, 41, 59, 0.85);
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            color: #e2e8f0;
+            padding: 9px 11px;
+            border-radius: 10px;
+            font-size: 12.5px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .prompt-btn:hover {
+            background: rgba(37, 99, 235, 0.25);
+            border-color: #3b82f6;
+            transform: translateX(3px);
+        }
+
+        .prompt-tag {
+            font-size: 10.5px;
+            padding: 2px 7px;
+            border-radius: 6px;
+            background: rgba(249, 115, 22, 0.2);
+            color: #fdba74;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .tariff-mini {
+            background: rgba(2, 6, 23, 0.55);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 10px 12px;
+            font-size: 11.5px;
+            line-height: 1.55;
+            color: #cbd5e1;
+        }
+
+        .tariff-mini strong {
+            color: #38bdf8;
+        }
+
+        /* WhatsApp Phone Frame */
+        .phone-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: stretch;
+        }
+
+        .phone-container {
+            width: 100%;
+            max-width: 480px;
+            background-color: #efeae2;
+            background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');
+            border-radius: 22px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 4px solid #1e293b;
+            max-height: calc(100vh - 110px);
+        }
+
+        .wa-header {
+            background-color: #075e54;
+            color: white;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .wa-header-left {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+        }
+
+        .wa-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #2563eb, #f97316);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 16px;
+            color: #fff;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .wa-info h3 {
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .wa-info p {
+            font-size: 11.5px;
+            color: #d1fae5;
+        }
+
+        .reset-btn {
+            background: rgba(255, 255, 255, 0.14);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .reset-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .chat-box {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .message {
+            max-width: 82%;
+            padding: 9px 13px;
+            border-radius: 10px;
+            font-size: 13.5px;
+            line-height: 1.45;
+            position: relative;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+        }
+
+        .message.user {
+            background-color: #dcf8c6;
+            color: #111827;
+            align-self: flex-end;
+            border-top-right-radius: 2px;
+        }
+
+        .message.bot {
+            background-color: #ffffff;
+            color: #111827;
+            align-self: flex-start;
+            border-top-left-radius: 2px;
+        }
+
+        .message-time {
+            font-size: 10px;
+            color: #6b7280;
+            text-align: right;
+            margin-top: 4px;
+        }
+
+        .input-area {
+            background-color: #f0f0f0;
+            padding: 10px 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-area input {
+            flex: 1;
+            padding: 11px 15px;
+            border-radius: 24px;
+            border: 1px solid #d1d5db;
+            outline: none;
+            font-size: 14px;
+            color: #111827;
+        }
+
+        .input-area button {
+            background-color: #075e54;
+            color: white;
+            border: none;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 17px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .typing {
+            font-size: 12px;
+            color: #374151;
+            font-style: italic;
+            padding: 4px 16px;
+            display: none;
+            background: rgba(255, 255, 255, 0.75);
+        }
+
+        /* Coordinator Panel */
+        .ticket-card {
+            background: rgba(30, 41, 59, 0.9);
+            border: 1px solid rgba(59, 130, 246, 0.35);
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 12px;
+        }
+
+        .ticket-card.quoted {
+            border-color: rgba(16, 185, 129, 0.45);
+        }
+
+        .ticket-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 700;
+            color: #38bdf8;
+        }
+
+        .ticket-status {
+            font-size: 10px;
+            padding: 2px 7px;
+            border-radius: 999px;
+            background: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+        }
+
+        .ticket-status.quoted {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+        }
+
+        .coord-reply-box {
+            display: flex;
+            gap: 6px;
+            margin-top: 6px;
+        }
+
+        .coord-reply-box input {
+            flex: 1;
+            background: #0f172a;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            color: #f8fafc;
+            padding: 7px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+
+        .coord-reply-box button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 7px 11px;
+            border-radius: 8px;
+            font-size: 11.5px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="top-header">
+        <div class="brand-row">
+            <div class="brand-badge">MC</div>
+            <div class="brand-title">
+                <h1>Médica Colombia S.A.S. — Bot de WhatsApp IA (Tarifas Oficiales 2026)</h1>
+                <p>Sede Versalles: Av. 4 Norte # 20N-10, Cali | Atención Domiciliaria, Consultorio y Telemedicina sin Intermediarios</p>
+            </div>
+        </div>
+        <div class="header-pills">
+            <span class="pill">● Asesora IA: Diana Rodríguez</span>
+            <span class="pill orange">Llave Bre-B: 0091267532 | B. Occidente: 073039034</span>
+        </div>
+    </header>
+
+    <div class="workspace">
+        <!-- Panel Izquierdo: Botones rápidos de prueba de los 10 servicios -->
+        <aside class="panel">
+            <h2>1. Prueba los 10 Servicios (1 Clic)</h2>
+            <div class="quick-prompts">
+                <button class="prompt-btn" onclick="sendQuick('Hola, necesito una teleconsulta médica hoy para leer unos exámenes')">
+                    <span>💻 1. Atención Virtual (Teleconsulta)</span>
+                    <span class="prompt-tag">$80.000</span>
+                </button>
+                <button class="prompt-btn" onclick="sendQuick('Hola, qué vale una visita médica general a domicilio y una con médico internista?')">
+                    <span>🩺 2. Cita Médica / Especialista</span>
+                    <span class="prompt-tag">$115k / $275k</span>
+                </button>
+                <button class="prompt-btn" onclick="sendQuick('Hola, necesito que me ayuden a gestionar una autorización de exámenes en mi EPS Sura')">
+                    <span>📋 3. Gestión de Trámites EPS</span>
+                    <span class="prompt-tag">Sin filas</span>
+                </button>
+                <button class="prompt-btn" onclick="sendQuick('Hola, qué precio tiene un turno de auxiliar de enfermería de 8 y 12 horas para cuidar a mi abuela?')">
+                    <span>👵 4. Acompañamiento Adulto Mayor</span>
+                    <span class="prompt-tag">$150k / $220k</span>
+                </button>
+                <button class="prompt-btn" onclick="sendQuick('Hola, necesito que reclamen los medicamentos de mi mamá en Audifarma y los traigan a Valle del Lili')">
+                    <span>💊 5. Reclamar Medicamentos EPS</span>
+                    <span class="prompt-tag">Domicilio</span>
+                </button>
+                <button class="prompt-btn" onclick="sendQuick('Hola, tienen veterinario a domicilio en Cali para revisar a mi perrito?')">
+                    <span>🐾 6. Mascotas (Veterinario)</span>
+                    <span class="prompt-tag">En casa</span>
+                </button>
+                <button class="prompt-btn" onclick="sendQuick('Hola, qué cuesta una terapia física o fonoaudiología a domicilio y la aplicación de un antibiótico endovenoso cada 12 horas?')">
+                    <span>💉 7. Ayudas Médicas / Terapias</span>
+                    <span class="prompt-tag">$58k / $85k</span>
+                </button>
+                <button class="prompt-btn" onclick="sendQuick('Hola, quiero agendar una consulta de nutrición y coach de salud, qué cuesta en consultorio y en casa?')">
+                    <span>🥗 8. Coach de Salud y Nutrición</span>
+                    <span class="prompt-tag">$80k / $110k</span>
+                </button>
+                <button class="prompt-btn" onclick="sendQuick('Hola, qué valor tiene una consulta de psicología en consultorio o a domicilio?')">
+                    <span>🧠 9. Ayudas Psicológicas</span>
+                    <span class="prompt-tag">$80k / $110k</span>
+                </button>
+                <button class="prompt-btn" onclick="sendQuick('Hola, quiero que alguien revise y adecúe el baño y cuarto de mi casa para un adulto mayor y un bebé')">
+                    <span>🏠 10. Hogar Seguro (Adecuación)</span>
+                    <span class="prompt-tag">$85.000</span>
+                </button>
+                <button class="prompt-btn" style="border-color: rgba(16, 185, 129, 0.45); background: rgba(16, 185, 129, 0.12);" onclick="sendQuick('Listo, agendemos la cita. ¿Cuáles son los medios de pago y qué datos necesitas?')">
+                    <span>💳 Probar Cierre + Imagen Medios de Pago</span>
+                    <span class="prompt-tag">Bre-B / Efecty</span>
+                </button>
+            </div>
+
+            <h2>Resumen Tarifas 2026 Cargadas</h2>
+            <div class="tariff-mini">
+                • <strong>Consulta Médica Gral:</strong> $90.000 consultorio ($78k dto) | <strong>$115.000 domicilio</strong><br>
+                • <strong>Médico Prioritario:</strong> $120.000 consultorio | <strong>$155.000 domicilio</strong><br>
+                • <strong>Especialistas (Internista, Paliativo, Familiar, Integrativa):</strong> $200.000 consultorio | <strong>$275.000 domicilio</strong> (Pediatría dom: $289.000)<br>
+                • <strong>Terapias (Física, Respiratoria, Lenguaje, Deglución, Ocupacional):</strong> $50.000 consultorio | <strong>$58.000 domicilio</strong><br>
+                • <strong>Psicología / Nutrición / Trabajo Social:</strong> $80.000 consultorio | <strong>$110.000 domicilio</strong><br>
+                • <strong>Endovenosos (Mano de obra):</strong> c/24h $58k | c/12h $85k | c/8h $120k | c/6h $150k | c/4h $220k<br>
+                • <strong>Curaciones / Toma Laboratorio:</strong> $60.000 / $59.000<br>
+                • <strong>Turnos Enfermería Diurno:</strong> 4h $118k | 6h $125k | 8h $150k | 12h $220k (Nocturno 8h $190k / 12h $350k)
+            </div>
+        </aside>
+
+        <!-- Panel Central: Simulador de WhatsApp -->
+        <main class="phone-wrapper">
+            <div class="phone-container">
+                <div class="wa-header">
+                    <div class="wa-header-left">
+                        <div class="wa-avatar">MC</div>
+                        <div class="wa-info">
+                            <h3>Médica Colombia S.A.S.</h3>
+                            <p>Diana Rodríguez • En línea (315 365 8627)</p>
+                        </div>
+                    </div>
+                    <button class="reset-btn" onclick="resetChat()">Reiniciar Chat</button>
+                </div>
+
+                <div class="chat-box" id="chatBox">
+                    <div class="message bot">
+                        Hola, buen día. Te habla Diana Rodríguez de Médica Colombia. Contamos con atención médica, terapias, enfermería, trámites de EPS, cuidado de adulto mayor, mascotas y hogar seguro en casa, en nuestro consultorio de Versalles o por teleconsulta. ¿En qué servicio te puedo colaborar hoy?
+                        <div class="message-time">Ahora</div>
+                    </div>
+                </div>
+
+                <div class="typing" id="typingIndicator">Diana Rodríguez está escribiendo...</div>
+
+                <div class="input-area">
+                    <input type="text" id="messageInput" placeholder="Escribe un mensaje como paciente..." onkeypress="handleKeyPress(event)">
+                    <button onclick="sendMessage()">➤</button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Panel Derecho: Tickets Internos de Coordinación -->
+        <aside class="panel">
+            <h2>2. Bandeja Interna de Coordinación</h2>
+            <p style="font-size: 12px; color: #94a3b8; line-height: 1.45;">
+                Cuando el paciente solicita cotizar (laboratorios, medicamentos, trámites EPS, hogar seguro, mascotas) o agendar cita, el bot envía un ticket automático por WhatsApp al Coordinador (<strong>+57 315 365 8627</strong>).
+            </p>
+            <div id="ticketsContainer" style="display: flex; flex-direction: column; gap: 10px; margin-top: 6px;">
+                <div class="tariff-mini" style="text-align: center; color: #94a3b8;">
+                    Aún no hay solicitudes activas. Pide agendar o cotizar un servicio en el chat para ver cómo se dispara el ticket.
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        const chatBox = document.getElementById('chatBox');
+        const messageInput = document.getElementById('messageInput');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const ticketsContainer = document.getElementById('ticketsContainer');
+
+        function getCurrentTime() {
+            const now = new Date();
+            return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function appendMessage(text, sender) {
+            const msgDiv = document.createElement('div');
+            msgDiv.classList.add('message', sender);
+            msgDiv.textContent = text;
+
+            const timeDiv = document.createElement('div');
+            timeDiv.classList.add('message-time');
+            timeDiv.textContent = getCurrentTime();
+
+            msgDiv.appendChild(timeDiv);
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function appendImageMessage(imgUrl, caption) {
+            const msgDiv = document.createElement('div');
+            msgDiv.classList.add('message', 'bot');
+            msgDiv.innerHTML = `
+                <img src="${imgUrl}" alt="${caption}" style="width:100%; max-width:290px; border-radius:8px; display:block; margin-bottom:6px; border:1px solid #e5e7eb;" />
+                <div style="font-size:12.5px; color:#1f2937;">${caption}</div>
+                <div class="message-time">${getCurrentTime()}</div>
+            `;
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function renderTickets(tickets) {
+            if (!tickets || tickets.length === 0) {
+                ticketsContainer.innerHTML = `<div class="tariff-mini" style="text-align: center; color: #94a3b8;">Aún no hay solicitudes activas.</div>`;
+                return;
+            }
+
+            ticketsContainer.innerHTML = tickets.map(t => `
+                <div class="ticket-card ${t.status === 'QUOTED' ? 'quoted' : ''}">
+                    <div class="ticket-header">
+                        <span>Solicitud #${t.id}</span>
+                        <span class="ticket-status ${t.status === 'QUOTED' ? 'quoted' : ''}">${t.status === 'QUOTED' ? 'CONFIRMADO' : 'PENDIENTE'}</span>
+                    </div>
+                    <div><strong>Paciente/Zona:</strong> ${t.patientInfo}</div>
+                    <div><strong>Servicio:</strong> ${t.service}</div>
+                    <div><strong>Detalle:</strong> ${t.details}</div>
+                    ${t.quotePrice ? `<div style="color:#34d399;"><strong>Respuesta enviada:</strong> ${t.quotePrice} ${t.professional ? ' - ' + t.professional : ''} ${t.availability ? ' (' + t.availability + ')' : ''}</div>` : ''}
+                    <div class="coord-reply-box">
+                        <input type="text" id="coordInput_${t.id}" placeholder="Ej: $220.000 mañana 8:00 am con Dra. Luisa Lasso" />
+                        <button onclick="replyAsCoordinator('${t.id}')">Responder</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function replyAsCoordinator(ticketId) {
+            const input = document.getElementById('coordInput_' + ticketId);
+            if (!input || !input.value.trim()) return;
+            const rawReply = `#${ticketId} ${input.value.trim()}`;
+            input.value = '';
+
+            const res = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: rawReply, role: 'coordinator' })
+            });
+            const data = await res.json();
+            if (data.tickets) {
+                renderTickets(data.tickets);
+                const updated = data.tickets.find(x => x.id === ticketId);
+                if (updated && updated.quotePrice) {
+                    appendMessage(
+                        `Hola, te habla Diana Rodríguez de Médica Colombia. Ya validé tu solicitud para ${updated.patientInfo}:\n\n` +
+                        `🩺 Servicio: ${updated.service}\n` +
+                        `💵 Valor: ${updated.quotePrice}\n` +
+                        (updated.professional ? `👩‍⚕️ Profesional asignado: ${updated.professional}\n` : '') +
+                        (updated.availability ? `📅 Disponibilidad / Horario: ${updated.availability}\n` : '') +
+                        `\nRecuerda que puedes pagar por nuestra Llave Bre-B 0091267532 o en Efecty / Banco de Occidente Cuenta Corriente 073039034. ¿Confirmamos tu programación?`,
+                        'bot'
+                    );
+                    appendImageMessage('/medios_pago.jpg', 'Medios de Pago Oficiales - Médica Colombia S.A.S. (Llave Bre-B: 0091267532 | B. Occidente: 073039034)');
+                }
+            }
+        }
+
+        async function sendMessage() {
+            const text = messageInput.value.trim();
+            if (!text) return;
+
+            appendMessage(text, 'user');
+            messageInput.value = '';
+            typingIndicator.style.display = 'block';
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: text, phone: 'simulador_web_medica' })
+                });
+
+                const data = await response.json();
+                typingIndicator.style.display = 'none';
+
+                if (data.reply) {
+                    appendMessage(data.reply, 'bot');
+                }
+                if (data.sendPaymentImage) {
+                    appendImageMessage('/medios_pago.jpg', 'Medios de Pago Oficiales - Médica Colombia S.A.S. (Llave Bre-B: 0091267532 | Cuenta Corriente Banco de Occidente: 073039034)');
+                }
+                if (data.sendRegistrationImage) {
+                    appendImageMessage('/datos_paciente.jpg', 'Datos requeridos para el ingreso en el sistema de Médica Colombia');
+                }
+                if (data.tickets) {
+                    renderTickets(data.tickets);
+                }
+            } catch (error) {
+                typingIndicator.style.display = 'none';
+                appendMessage('Error de conexión con el servidor.', 'bot');
+            }
+        }
+
+        function sendQuick(text) {
+            messageInput.value = text;
+            sendMessage();
+        }
+
+        async function resetChat() {
+            await fetch('/api/reset', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: 'simulador_web_medica' })
+            });
+            chatBox.innerHTML = `
+                <div class="message bot">
+                    Hola, buen día. Te habla Diana Rodríguez de Médica Colombia. Contamos con atención médica, terapias, enfermería, trámites de EPS, cuidado de adulto mayor, mascotas y hogar seguro en casa, en nuestro consultorio de Versalles o por teleconsulta. ¿En qué servicio te puedo colaborar hoy?
+                    <div class="message-time">Ahora</div>
+                </div>
+            `;
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        // Cargar tickets iniciales
+        fetch('/api/tickets').then(r => r.json()).then(d => renderTickets(d.tickets || [])).catch(() => {});
+    </script>
+</body>
+</html>

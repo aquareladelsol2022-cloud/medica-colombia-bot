@@ -1,0 +1,37 @@
+{
+  "name": "medica-colombia-bot",
+  "version": "1.0.0",
+  "description": "Bot de WhatsApp con IA para Médica Colombia S.A.S. - Salud, Cuidado y Hogar en Casa",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "tsc && node dist/index.js",
+    "dev": "ts-node src/index.ts"
+  },
+  "keywords": [
+    "whatsapp",
+    "medica-colombia",
+    "salud-domiciliaria",
+    "openai",
+    "baileys"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.7.21",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "openai": "^6.27.0",
+    "pino": "^9.6.0",
+    "qrcode-terminal": "^0.12.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.4.0",
+    "@types/qrcode-terminal": "^0.12.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}

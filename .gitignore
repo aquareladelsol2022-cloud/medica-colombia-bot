@@ -1,0 +1,10 @@
+node_modules/
+dist/
+temp_media/
+baileys_auth_info/
+.env
+.env.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
