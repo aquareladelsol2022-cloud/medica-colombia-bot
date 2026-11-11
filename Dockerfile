@@ -1,6 +1,6 @@
 FROM node:20
 
-RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends git && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /usr/src/app
 
@@ -12,4 +12,4 @@ RUN npm run build
 
 EXPOSE 3085
 
-CMD [ "npm", "start" ]
+CMD [ "node", "dist/index.js" ]
