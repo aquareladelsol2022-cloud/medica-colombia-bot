@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
-import { initWhatsAppClient, sendWhatsAppMessage, sendWhatsAppImage, downloadWhatsAppMedia, latestQrUrl, isWhatsAppConnected, requestPairing } from './services/whatsapp.service';
+import { initWhatsAppClient, sendWhatsAppMessage, sendWhatsAppImage, downloadWhatsAppMedia, latestQrUrl, isWhatsAppConnected, requestPairing, botMessageIds } from './services/whatsapp.service';
 import { generateAIResponse, transcribeAudio, resetConversation } from './services/ai.service';
 import { quotesService } from './services/quotes.service';
 
@@ -11,6 +11,10 @@ dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3085;
+
+// Control de intervención de asesores humanos (pausa temporal del bot)
+export const humanTakeover: Record<string, number> = {};
+export const TAKEOVER_TIMEOUT_MS = (parseInt(process.env.HUMAN_TAKEOVER_MINUTES || '15', 10)) * 60 * 1000;
 
 app.use(cors());
 app.use(express.json());
@@ -222,7 +226,8 @@ app.get('/api/qr', (req: Request, res: Response) => {
 });
 
 app.get('/api/tickets', (req: Request, res: Response) => {
-    res.json({ tickets: quotesService.getAllTickets(), whatsappConnected: isWhatsAppConnected, qrUrl: latestQrUrl });
+    const activePaused = Object.keys(humanTakeover).filter(k => (Date.now() - humanTakeover[k]) < TAKEOVER_TIMEOUT_MS);
+    res.json({ tickets: quotesService.getAllTickets(), whatsappConnected: isWhatsAppConnected, qrUrl: latestQrUrl, pausedChats: activePaused });
 });
 
 app.post('/api/reset', (req: Request, res: Response) => {
@@ -262,7 +267,7 @@ app.post('/api/chat', async (req: Request, res: Response) => {
 
         const quoteMatch = aiReply.match(/\[(?:SOLICITAR_COTIZACION|CONSULTAR_COORDINADOR):\s*([^\]]+)\]/i);
         const cleanReplyForClient = aiReply
-            .replace(/\[(?:SOLICITAR_COTIZACION|CONSULTAR_COORDINADOR):[^\]]+\]/gi, '')
+            .replace(/\[(?:SOLICITAR_COTIZACION|CONSULTAR_COORDINADOR|ESCALAR_HUMANO):[^\]]+\]/gi, '')
             .replace(/\*/g, '')
             .trim();
 
@@ -337,9 +342,54 @@ initWhatsAppClient(async (msg: any) => {
             : remoteJid.split('@')[0];
         const from = rawPhone.split(':')[0];
 
+        // 1. Detección de mensajes salientes (fromMe: true)
         if (msg.key.fromMe) {
+            // Si el mensaje fue enviado por el propio bot automatizado, ignorar para no auto-pausarse
+            if (msg.key.id && botMessageIds.has(msg.key.id)) {
+                return;
+            }
+
+            // Si es un comando de ticket del coordinador (#123 ...) procesarlo
             const isTicketCommand = /^\s*#\d{3,4}\b/.test(incomingMsg);
-            if (!isTicketCommand) return;
+            if (isTicketCommand) {
+                await quotesService.handleCoordinatorMessage(from, incomingMsg, quotedStanzaId);
+                return;
+            }
+
+            // Comandos manuales del asesor en el chat
+            const cleanCmd = incomingMsg.toLowerCase().trim();
+            if (cleanCmd === 'activar bot' || cleanCmd === '#bot' || cleanCmd === '#activar') {
+                delete humanTakeover[remoteJid];
+                console.log(`[REACTIVACIÓN MANUAL] Asesor reactivó el bot en el chat con +${from}.`);
+                return;
+            }
+            if (cleanCmd === 'pausar bot' || cleanCmd === '#pausa' || cleanCmd === '#humano') {
+                humanTakeover[remoteJid] = Date.now() + 15 * 60 * 1000; // 30 minutos de pausa
+                console.log(`[PAUSA MANUAL] Asesor pausó el bot en el chat con +${from} por 30 minutos.`);
+                return;
+            }
+
+            // Si un asesor humano de Médica Colombia respondió al paciente desde el celular o WhatsApp Web:
+            if (incomingMsg.trim().length > 0) {
+                humanTakeover[remoteJid] = Date.now();
+                console.log(`[PAUSA AUTOMÁTICA] Asesor humano respondió en el chat con +${from}. Bot silenciado ${TAKEOVER_TIMEOUT_MS / 60000} minutos.`);
+            }
+            return;
+        }
+
+        // 2. Verificar si el chat con este paciente está pausado por atención humana
+        if (humanTakeover[remoteJid]) {
+            const elapsed = Date.now() - humanTakeover[remoteJid];
+            const cleanText = incomingMsg.toLowerCase().trim();
+
+            if (cleanText === 'activar bot' || cleanText === 'reiniciar bot' || cleanText === '#bot' || elapsed >= TAKEOVER_TIMEOUT_MS) {
+                delete humanTakeover[remoteJid];
+                console.log(`[BOT REACTIVADO] Pausa finalizada para +${from}. El bot vuelve a responder.`);
+            } else {
+                const remainingMinutes = Math.ceil((TAKEOVER_TIMEOUT_MS - elapsed) / 60000);
+                console.log(`[SILENCIO HUMANO] Paciente +${from} escribió, pero el chat está en manos de un asesor humano (${remainingMinutes} mins restantes de pausa).`);
+                return;
+            }
         }
 
         const isCoordinatorSender = quotesService.isCoordinator(from, remoteJid, quotedStanzaId, incomingMsg);
@@ -414,9 +464,17 @@ initWhatsAppClient(async (msg: any) => {
 
         const aiReply = await generateAIResponse(from, incomingMsg, quoteContext);
 
+        const isHandoff = /\[ESCALAR_HUMANO:[^\]]+\]/i.test(aiReply);
+        if (isHandoff) {
+            humanTakeover[remoteJid] = Date.now();
+            console.log(`[ESCALAR HUMANO] Paciente +${from} solicitó asesor humano. Bot pausado ${TAKEOVER_TIMEOUT_MS / 60000} minutos.`);
+            const alertMsg = `⚠️ *SOLICITUD DE ASESOR HUMANO (Médica Colombia)*\nEl paciente +${from} solicitó hablar con un asesor.\nÚltimo mensaje del paciente: "${incomingMsg}"\nEl bot se ha silenciado automáticamente por ${TAKEOVER_TIMEOUT_MS / 60000} minutos en ese chat para que un asesor pueda atenderlo.`;
+            await sendWhatsAppMessage(quotesService.coordinatorJid || quotesService.coordinatorPhone, alertMsg);
+        }
+
         const quoteMatch = aiReply.match(/\[(?:SOLICITAR_COTIZACION|CONSULTAR_COORDINADOR):\s*([^\]]+)\]/i);
         const cleanReplyForClient = aiReply
-            .replace(/\[(?:SOLICITAR_COTIZACION|CONSULTAR_COORDINADOR):[^\]]+\]/gi, '')
+            .replace(/\[(?:SOLICITAR_COTIZACION|CONSULTAR_COORDINADOR|ESCALAR_HUMANO):[^\]]+\]/gi, '')
             .replace(/\*/g, '')
             .trim();
 

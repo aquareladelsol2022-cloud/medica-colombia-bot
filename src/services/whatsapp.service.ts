@@ -8,7 +8,18 @@ import pino from 'pino';
 export let sock: any = null;
 export let latestQrUrl: string | null = null;
 export let isWhatsAppConnected: boolean = false;
+export const botMessageIds = new Set<string>();
 let qrPrintedOnce = false;
+
+const trackBotMessage = (sent: any) => {
+    if (sent?.key?.id) {
+        botMessageIds.add(sent.key.id);
+        if (botMessageIds.size > 2000) {
+            const first = botMessageIds.values().next().value;
+            if (first) botMessageIds.delete(first);
+        }
+    }
+};
 
 export const requestPairing = async (phoneNumber: string): Promise<string> => {
     if (!sock) {
@@ -102,6 +113,7 @@ export const sendWhatsAppMessage = async (to: string, body: string): Promise<any
         else if (!to.includes('@')) chatId = `${to.replace(/\D/g, '')}@s.whatsapp.net`;
 
         const sent = await sock.sendMessage(chatId, { text: body });
+        trackBotMessage(sent);
         console.log(`[Baileys] Mensaje enviado a ${chatId}`);
         return sent;
     } catch (error: any) {
@@ -124,6 +136,7 @@ export const sendWhatsAppImage = async (to: string, filePath: string, caption?: 
         if (caption) payload.caption = caption;
 
         const sent = await sock.sendMessage(chatId, payload);
+        trackBotMessage(sent);
         console.log(`[Baileys] Imagen enviada a ${chatId}`);
         return sent;
     } catch (error: any) {
@@ -146,6 +159,7 @@ export const sendWhatsAppDocument = async (to: string, filePath: string, filenam
         if (caption) payload.caption = caption;
 
         const sent = await sock.sendMessage(chatId, payload);
+        trackBotMessage(sent);
         console.log(`[Baileys] Documento enviado a ${chatId}`);
         return sent;
     } catch (error: any) {

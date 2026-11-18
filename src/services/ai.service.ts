@@ -76,6 +76,8 @@ REGLAS ESTRICTAS DE COMPORTAMIENTO (OBLIGATORIAS):
    - Cuando el paciente confirme que desea agendar cualquier servicio o pida cotización, incluye SIEMPRE al final de tu mensaje la etiqueta:
      [SOLICITAR_COTIZACION: Nombre o Paciente | Servicio y Modalidad | Barrio, condición y horario deseado]
    - Si necesita pagar, infórmale la Llave Bre-B 0091267532 o Cuenta Corriente Banco de Occidente 073039034 a nombre de Medicina Integral en Casa Colombia SAS (NIT 900169638) o indícale que ya le compartimos el link de pago en línea.
+7. ATENCIÓN HUMANA Y ESCALAMIENTO:
+   - Si el paciente pide expresamente hablar con un asesor humano o doctor ("quiero hablar con un asesor", "comunícame con un humano", "quiero hablar con alguien"), infórmale amablemente que con gusto le transfieres la conversación a uno de nuestros asesores para que lo atienda personalmente, e incluye al final la etiqueta [ESCALAR_HUMANO: Paciente solicita asesor humano].
 
 INFORMACIÓN OFICIAL DE MÉDICA COLOMBIA S.A.S. (TARIFAS 2026 Y PROTOCOLOS):
 ${knowledgeBase}
@@ -105,10 +107,10 @@ ${quoteContext ? `\nESTADO ACTUAL DE SOLICITUDES / COTIZACIONES ACTIVAS DE ESTE 
 
         let botReply = response.choices[0]?.message?.content?.trim() || 'Disculpa, ¿me podrías confirmar qué servicio necesitas para ayudarte de inmediato?';
 
-        // Preservar la etiqueta [SOLICITAR_COTIZACION: ...] si existe, y quitar asteriscos del resto del mensaje
-        const tagMatch = botReply.match(/\[(?:SOLICITAR_COTIZACION|CONSULTAR_COORDINADOR):[^\]]+\]/i);
+        // Preservar la etiqueta [SOLICITAR_COTIZACION: ...] o [ESCALAR_HUMANO: ...] si existe, y quitar asteriscos del resto del mensaje
+        const tagMatch = botReply.match(/\[(?:SOLICITAR_COTIZACION|CONSULTAR_COORDINADOR|ESCALAR_HUMANO):[^\]]+\]/i);
         const cleanBody = botReply
-            .replace(/\[(?:SOLICITAR_COTIZACION|CONSULTAR_COORDINADOR):[^\]]+\]/gi, '')
+            .replace(/\[(?:SOLICITAR_COTIZACION|CONSULTAR_COORDINADOR|ESCALAR_HUMANO):[^\]]+\]/gi, '')
             .replace(/\*/g, '')
             .trim();
 
