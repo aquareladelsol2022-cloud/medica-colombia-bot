@@ -1,4 +1,4 @@
-import { makeWASocket, useMultiFileAuthState, DisconnectReason, downloadMediaMessage } from '@whiskeysockets/baileys';
+import { makeWASocket, useMultiFileAuthState, DisconnectReason, downloadMediaMessage, Browsers } from '@whiskeysockets/baileys';
 import qrcode from 'qrcode-terminal';
 import fs from 'fs';
 import path from 'path';
@@ -9,6 +9,18 @@ export let sock: any = null;
 export let latestQrUrl: string | null = null;
 export let isWhatsAppConnected: boolean = false;
 let qrPrintedOnce = false;
+
+export const requestPairing = async (phoneNumber: string): Promise<string> => {
+    if (!sock) {
+        throw new Error('El servicio de WhatsApp está arrancando. Espera unos segundos e intenta nuevamente.');
+    }
+    if (isWhatsAppConnected) {
+        throw new Error('WhatsApp ya se encuentra conectado.');
+    }
+    const cleanPhone = phoneNumber.replace(/\D/g, '');
+    const code = await sock.requestPairingCode(cleanPhone);
+    return code;
+};
 
 export const initWhatsAppClient = async (onMessageReceived: (msg: any) => Promise<void>) => {
     const authDir = path.join(process.cwd(), 'baileys_auth_info');
@@ -21,7 +33,7 @@ export const initWhatsAppClient = async (onMessageReceived: (msg: any) => Promis
         auth: state,
         printQRInTerminal: false,
         logger: pino({ level: 'silent' }) as any,
-        browser: ['Ubuntu', 'Chrome', '20.0.04'],
+        browser: Browsers.macOS('Desktop'),
         syncFullHistory: false,
         markOnlineOnConnect: false
     });
@@ -34,9 +46,9 @@ export const initWhatsAppClient = async (onMessageReceived: (msg: any) => Promis
             if (!qrPrintedOnce) {
                 qrPrintedOnce = true;
                 console.log('\n=========================================');
-                console.log('🩺 ESCANEA ESTE CÓDIGO QR PARA MÉDICA COLOMBIA:');
+                console.log('🩺 VINCULACIÓN EN VIVO (MÉDICA COLOMBIA):');
+                console.log('👉 https://medica-colombia-bot-production.up.railway.app/api/qr');
                 qrcode.generate(qr, { small: true });
-                console.log('\nEnlace QR en vivo: http://localhost:3085/api/qr');
                 console.log('=========================================\n');
             }
         }
