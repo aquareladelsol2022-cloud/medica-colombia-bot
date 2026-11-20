@@ -16,6 +16,15 @@ const port = process.env.PORT || 3085;
 export const humanTakeover: Record<string, number> = {};
 export const TAKEOVER_TIMEOUT_MS = (parseInt(process.env.HUMAN_TAKEOVER_MINUTES || '15', 10)) * 60 * 1000;
 
+// Deduplicación rápida de mensajes idénticos y buffer anti-respuestas dobles
+const lastIncomingText: Record<string, { text: string; time: number }> = {};
+interface DebounceQueueItem {
+    messages: string[];
+    timer: NodeJS.Timeout;
+}
+const userDebounceQueue: Record<string, DebounceQueueItem> = {};
+const activeProcessingChats = new Set<string>();
+
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -444,15 +453,65 @@ initWhatsAppClient(async (msg: any) => {
 
         if (!incomingMsg) return;
 
-        console.log(`\n========================================`);
-        console.log(`📩 Mensaje de WhatsApp (+${from}): "${incomingMsg}"`);
-
         if (isCoordinatorSender) {
+            console.log(`\n========================================`);
             console.log(`🩺 Mensaje detectado como Coordinación Médica Colombia (+${from})`);
             await quotesService.handleCoordinatorMessage(from, incomingMsg, quotedStanzaId);
             console.log(`========================================\n`);
             return;
         }
+
+        // Deduplicación rápida de contenido idéntico en menos de 3.5 segundos
+        const now = Date.now();
+        const lastMsg = lastIncomingText[remoteJid];
+        if (lastMsg && lastMsg.text === incomingMsg.trim() && (now - lastMsg.time) < 3500) {
+            console.log(`[Deduplicación Contenido] Mensaje idéntico recibido en <3.5s de +${from}: omitiendo duplicado.`);
+            return;
+        }
+        lastIncomingText[remoteJid] = { text: incomingMsg.trim(), time: now };
+
+        // Buffer de agregación (debounce 2.2s) para unir mensajes consecutivos de un usuario
+        const queueKey = remoteJid;
+        if (userDebounceQueue[queueKey]) {
+            clearTimeout(userDebounceQueue[queueKey].timer);
+            userDebounceQueue[queueKey].messages.push(incomingMsg);
+        } else {
+            userDebounceQueue[queueKey] = {
+                messages: [incomingMsg],
+                timer: setTimeout(() => {}, 0)
+            };
+        }
+
+        userDebounceQueue[queueKey].timer = setTimeout(async () => {
+            const queue = userDebounceQueue[queueKey];
+            delete userDebounceQueue[queueKey];
+            if (!queue || queue.messages.length === 0) return;
+
+            // Protección de concurrencia: si ya hay una respuesta generándose para este chat, esperar
+            if (activeProcessingChats.has(remoteJid)) {
+                console.log(`[Mutex] Ya hay una respuesta generándose para +${from}. Omitiendo solapamiento.`);
+                return;
+            }
+
+            activeProcessingChats.add(remoteJid);
+            try {
+                const consolidatedMsg = queue.messages.join('\n').trim();
+                await handleCustomerConsolidatedMessage(from, remoteJid, consolidatedMsg);
+            } catch (err) {
+                console.error(`Error en handleCustomerConsolidatedMessage (+${from}):`, err);
+            } finally {
+                activeProcessingChats.delete(remoteJid);
+            }
+        }, 2200);
+    } catch (error) {
+        console.error('Error procesando mensaje de WhatsApp:', error);
+    }
+});
+
+async function handleCustomerConsolidatedMessage(from: string, remoteJid: string, incomingMsg: string) {
+    try {
+        console.log(`\n========================================`);
+        console.log(`📩 Mensaje consolidado de WhatsApp (+${from}): "${incomingMsg}"`);
 
         const activeTicket = quotesService.getActiveCustomerTicket(remoteJid, from);
         let quoteContext: string | undefined = undefined;
@@ -512,9 +571,9 @@ initWhatsAppClient(async (msg: any) => {
         console.log(`🤖 Respuesta de Diana (Médica Colombia): "${cleanReplyForClient}"`);
         console.log(`========================================\n`);
     } catch (error) {
-        console.error('Error procesando mensaje de WhatsApp:', error);
+        console.error('Error en handleCustomerConsolidatedMessage:', error);
     }
-});
+}
 
 app.listen(port, () => {
     console.log(`🚀 Servidor de Médica Colombia Bot corriendo en http://localhost:${port}`);

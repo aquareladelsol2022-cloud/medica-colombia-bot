@@ -9,7 +9,19 @@ export let sock: any = null;
 export let latestQrUrl: string | null = null;
 export let isWhatsAppConnected: boolean = false;
 export const botMessageIds = new Set<string>();
+export const processedMessageIds = new Set<string>();
 let qrPrintedOnce = false;
+
+export const isMessageProcessed = (msgId: string | undefined): boolean => {
+    if (!msgId) return false;
+    if (processedMessageIds.has(msgId)) return true;
+    processedMessageIds.add(msgId);
+    if (processedMessageIds.size > 3000) {
+        const first = processedMessageIds.values().next().value;
+        if (first) processedMessageIds.delete(first);
+    }
+    return false;
+};
 
 const trackBotMessage = (sent: any) => {
     if (sent?.key?.id) {
@@ -34,6 +46,19 @@ export const requestPairing = async (phoneNumber: string): Promise<string> => {
 };
 
 export const initWhatsAppClient = async (onMessageReceived: (msg: any) => Promise<void>) => {
+    // Si ya existe un socket anterior, desvincular sus listeners y cerrarlo limpiamente
+    if (sock) {
+        try {
+            sock.ev?.removeAllListeners?.('messages.upsert');
+            sock.ev?.removeAllListeners?.('connection.update');
+            sock.ev?.removeAllListeners?.('creds.update');
+            sock.end?.(undefined);
+        } catch (e) {
+            console.error('Error cerrando socket anterior:', e);
+        }
+        sock = null;
+    }
+
     const authDir = path.join(process.cwd(), 'baileys_auth_info');
     if (!fs.existsSync(authDir)) {
         fs.mkdirSync(authDir, { recursive: true });
@@ -93,9 +118,13 @@ export const initWhatsAppClient = async (onMessageReceived: (msg: any) => Promis
     sock.ev.on('messages.upsert', async (m: any) => {
         if (m.type === 'notify') {
             for (const msg of m.messages) {
-                if (msg.message) {
-                    await onMessageReceived(msg);
+                if (!msg?.message) continue;
+                const msgId = msg.key?.id;
+                if (msgId && isMessageProcessed(msgId)) {
+                    console.log(`[Deduplicación Baileys] Mensaje ${msgId} ya procesado. Omitiendo duplicado.`);
+                    continue;
                 }
+                await onMessageReceived(msg);
             }
         }
     });
