@@ -289,8 +289,10 @@ app.post('/api/chat', async (req: Request, res: Response) => {
             createdTicket = await quotesService.createTicket(phone, phone, patientInfo, service, details);
         }
 
-        // Detectar si en la conversación se habló de medios de pago o datos de ingreso para adjuntar la imagen oficial
-        const mentionsPayment = /(0091267532|073039034|bre-b|medios de pago|efecty|banco de occidente|cómo pago|como pago|donde pago|transferencia|consignaci)/i.test(cleanReplyForClient + ' ' + message);
+        // Solo adjuntar imagen de medios de pago si el cliente pregunta cómo pagar o si Coordinación ya confirmó la cotización/capacidad
+        const clientAsksPayment = /(c[oó]mo pago|d[oó]nde pago|a d[oó]nde consigno|link de pago|medios de pago|n[uú]mero de cuenta|cuenta para pagar|datos para transferir)/i.test(message);
+        const coordinatorConfirmedPayment = (activeTicket?.status === 'QUOTED') && /(0091267532|073039034|bre-b|banco de occidente)/i.test(cleanReplyForClient);
+        const mentionsPayment = clientAsksPayment || coordinatorConfirmedPayment;
         const mentionsRegistration = /(estado civil|ocupaci[oó]n|parentesco|fecha de nacimiento|ingreso en el sistema)/i.test(cleanReplyForClient);
 
         res.json({
@@ -539,8 +541,10 @@ async function handleCustomerConsolidatedMessage(from: string, remoteJid: string
 
         await sendWhatsAppMessage(remoteJid, cleanReplyForClient);
 
-        // Si se mencionan los medios de pago o el cliente pregunta cómo pagar, adjuntar la imagen oficial de Medios de Pago
-        const mentionsPayment = /(0091267532|073039034|bre-b|medios de pago|efecty|banco de occidente|cómo pago|como pago|donde pago|transferencia|consignaci)/i.test(cleanReplyForClient + ' ' + incomingMsg);
+        // Solo adjuntar imagen de medios de pago si el cliente pregunta cómo pagar o si Coordinación ya confirmó la cotización/capacidad
+        const clientAsksPayment = /(c[oó]mo pago|d[oó]nde pago|a d[oó]nde consigno|link de pago|medios de pago|n[uú]mero de cuenta|cuenta para pagar|datos para transferir)/i.test(incomingMsg);
+        const coordinatorConfirmedPayment = (activeTicket?.status === 'QUOTED') && /(0091267532|073039034|bre-b|banco de occidente)/i.test(cleanReplyForClient);
+        const mentionsPayment = clientAsksPayment || coordinatorConfirmedPayment;
         if (mentionsPayment) {
             const paymentImgPath = path.join(process.cwd(), 'public', 'medios_pago.jpg');
             if (fs.existsSync(paymentImgPath)) {
